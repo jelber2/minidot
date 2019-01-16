@@ -5,6 +5,7 @@ A somewhat updated and more portable version of [Thomas Hackl's `minidot`](https
 ### Dependencies
 
 * minimap2
+* python with pysam
 * R-base with ggplot2, stringr, scales, argparse
 
 ### Install

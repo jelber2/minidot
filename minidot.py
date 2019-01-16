@@ -39,6 +39,7 @@ for fasta in args.fasta:
         tlen.write("%s\t%s\n" % (basename, len(seq)))
     super_fasta.write(">%s\n%s\n" % (basename, "".join(join_seq)))
 
+super_fasta.close()
 tlen.close()
 
 paf = open(prefix+"paf", "w")

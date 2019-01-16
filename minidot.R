@@ -62,9 +62,12 @@ parser$add_argument("-i", required=ARGPARSE_TRUE, metavar="PAF", help="supported
 parser$add_argument("-l", required=ARGPARSE_TRUE, metavar="LEN", help="per set sequence lengths")
 parser$add_argument("-o", metavar="OUT", default="minidot.pdf", help="output file, .pdf/.png")
 parser$add_argument("-S", "--no-self", action="store_true", default=FALSE, help="exclude plots of set against itself")
+parser$add_argument("--strip", action="store_true", default=FALSE, help="remove facets, axes and junk")
 parser$add_argument("--title", help="plot title")
 parser$add_argument("--theme", default="dark", help="themes: dark, light. [dark]")
-parser$add_argument("--width", default=20, help="plot width (cm)", type="integer")
+parser$add_argument("--width", default=20, help="plot width (cm)", type="double")
+parser$add_argument("--thick", default=2, help="line thickness (px)", type="double")
+parser$add_argument("--identity", default=0, help="minimum identity (0.0 - 1.0)", type="double")
 
 
 args <- parser$parse_args(args.cmd)
@@ -76,7 +79,7 @@ if (ARGPARSE_TRUE == "") quit();
 #args <- c("minidot.paf", "minidot.len");
 
 ## * read paf and len
-paf <- read.table(args$i)
+paf <- read.table(args$i, fill=TRUE, header=FALSE)
 len <- read.table(args$l) #, stringAsFactor=FALSE)
 
 sets <- unique(len$V1)
@@ -87,15 +90,6 @@ paf$V6 <- factor(paf$V6, levels=sets)
 
 sets.n <- length(unique(paf$V1))
 
-if(args$no_self){
-    if (sets.n > 1){
-        paf<-paf[!paf$V1==paf$V6,]
-        if(sets.n == 2){
-            ## make sure that for two sets, they don't appear in same dimension
-            paf<-paf[paf$V1==paf$V1[1],]
-        }
-    }
-}
 
 if(dim(paf)[1]==0){
     write("no matches between sets, nothing to plot", stderr())
@@ -105,7 +99,13 @@ if(dim(paf)[1]==0){
 paf$ava <- paf$V1:paf$V6
 paf$strand <- ifelse(paf$V5=='+', 1, -1)
 paf[paf$strand==-1,8:9] <- paf[paf$strand==-1,9:8]
-paf$idy <- paf$V10 / paf$V11 * paf$strand
+
+
+#paf$idy <- paf$V10 / paf$V11 * paf$strand   # minimap1
+paf$idy <- gsub("dv:f:","",paf$V16) # gross workaround for using est. divergence from minimap2 dv tag
+paf$idy <- (1.0 - as.numeric(paf$idy))
+
+paf <- paf[abs(paf$idy) >= args$identity,]
 
 ## * map contig boundaries to gglayer
 
@@ -118,6 +118,16 @@ yava.rt <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=nu
 xava.rt <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=numeric(0), ymin=numeric(0), ymax=numeric(0))
 
 ava.bg <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=numeric(0), ymin=numeric(0), ymax=numeric(0))
+if(args$no_self){
+    if (sets.n > 1){
+        paf<-paf[!paf$V1==paf$V6,]
+        if(sets.n == 2){
+            ## make sure that for two sets, they don't appear in same dimension
+            paf<-paf[paf$V1==paf$V1[1],]
+        }
+    }
+}
+
 
 for(i in unique(paf$ava)){
     r <- str_split_fixed(i, ":", 2)
@@ -150,32 +160,27 @@ if (args$theme=="dark"){
 
 gg <- gg + geom_rect(data=ava.bg, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill=col.fill)
 gg <- gg + geom_segment(data=ava.se, aes(x=x,xend=xend,y=y,yend=yend), size=.1, color=col.line, linetype = 3)
-gg <- gg + geom_segment(data=paf, aes(x=V3, xend=V4, y=V8, yend=V9, color=idy), size=.4, lineend = "round")
+gg <- gg + geom_segment(data=paf, aes(x=V3, xend=V4, y=V8, yend=V9, color=idy), size=args$thick, lineend = "round")
 
-if (args$theme=="dark") gg <- gg + scale_colour_distiller("Identity", palette="Spectral", direction=1)
-if (args$theme=="light") gg <- gg + scale_colour_gradientn("Identity", colours = c("#d60004", "#e8ae00", "#666666", "#666666", "#19bf5e", "#1701d2"))
+if (args$theme=="dark") gg <- gg + scale_colour_distiller("Identity", palette="Spectral", direction=1, limits=c(-1, 1))
+if (args$theme=="light") gg <- gg + scale_colour_gradientn("Identity", colours = c("#d60004", "#e8ae00", "#666666", "#666666", "#19bf5e", "#1701d2"), limits=c(-1, 1))
 
-gg <- gg + coord_fixed(1) + theme(
+gg <- gg + theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    panel.background = element_rect(fill = "grey92"),
+    panel.background = element_rect(fill = "white"),
     axis.title.x=element_blank(),
     axis.title.y=element_blank()
 )
 
-gg <- gg + scale_x_continuous(label=humanize_format(unit='',sep=''), expand=c(0,0))
-gg <- gg + scale_y_continuous(label=humanize_format(unit='',sep=''), expand=c(0,0))
+gg <- gg + scale_x_continuous(label=humanize_format(unit='',sep=''), expand=c(0,0), limits=c(-1,max(c(ava.bg$xmax, ava.bg$ymax)) ))
+gg <- gg + scale_y_continuous(label=humanize_format(unit='',sep=''), expand=c(0,0), limits=c(-1,max(c(ava.bg$xmax, ava.bg$ymax)) ))
 gg <- gg + facet_grid(V6~V1, drop=TRUE, as.table=FALSE)
 
-if (!is.null(args$title)) gg <- gg + ggtitle(args$title)
-
-# adjust width for direct compare of two set with different genome length
-plot.height = args$width -2 # assume square plot, but leave some extra room for legend
-if (sets.n == 2 && args$no_self) {
-    x <- ava.bg$xmax
-    y <- ava.bg$ymax
-    bp.width <- args$width/x
-    plot.height <- ava.bg$ymax * bp.width - ifelse(x > y, 0, 8)
+if(args$strip){
+    gg <- gg + theme(legend.position="none")
+    gg <- gg + theme(strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y = element_blank(), axis.text.x=element_blank(), axis.text.y=element_blank())
 }
 
-ggsave(args$o, plot=gg, width=args$width, height=plot.height, units="cm")
+if (!is.null(args$title)) gg <- gg + ggtitle(args$title)
+ggsave(args$o, plot=gg, width=args$width, height=args$width, units="cm")

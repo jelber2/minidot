@@ -20,6 +20,7 @@ parser.add_argument("--title", help="plot title [None]")
 parser.add_argument("--no-self", help="drop self-self mappings from resulting plot [False]", action='store_true', default=False)
 parser.add_argument("--strip", help="remove facets, axes and junk [False]", action='store_true', default=False)
 parser.add_argument("--identity", help="minimum identity for plot (0.0 - 1.0) [0]", default='0.0')
+parser.add_argument("--ignore-missing", help="don't do anything if an input file is missing", action='store_true', default=False)
 
 args = parser.parse_args()
 prefix = args.output.split('.')[0]+'.'
@@ -32,11 +33,17 @@ tlen = open(prefix+"tlen", "w")
 for fasta in args.fasta:
     join_seq = []
     basename = os.path.basename(fasta).split('.')[0]
-    fasta_fh = pysam.FastaFile(fasta)
-    for reference in fasta_fh.references:
-        seq = fasta_fh.fetch(reference=reference)
-        join_seq.append(seq)
-        tlen.write("%s\t%s\n" % (basename, len(seq)))
+    try:
+        fasta_fh = pysam.FastaFile(fasta)
+        for reference in fasta_fh.references:
+            seq = fasta_fh.fetch(reference=reference)
+            join_seq.append(seq)
+            tlen.write("%s\t%s\n" % (basename, len(seq)))
+    except OSError as e:
+        if args.ignore_missing:
+            pass
+        else:
+            raise e
     super_fasta.write(">%s\n%s\n" % (basename, "".join(join_seq)))
 
 super_fasta.close()

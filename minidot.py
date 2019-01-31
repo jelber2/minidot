@@ -23,7 +23,7 @@ parser.add_argument("--identity", help="minimum identity for plot (0.0 - 1.0) [0
 parser.add_argument("--ignore-missing", help="don't do anything if an input file is missing", action='store_true', default=False)
 
 args = parser.parse_args()
-prefix = args.output.split('.')[0]+'.'
+prefix = '.'.join(args.output.split('.')[:-1])+'.'
 
 #TODO Check the binaries (whatever)
 

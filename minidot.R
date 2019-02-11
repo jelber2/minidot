@@ -68,6 +68,7 @@ parser$add_argument("--theme", default="dark", help="themes: dark, light. [dark]
 parser$add_argument("--width", default=20, help="plot width (cm)", type="double")
 parser$add_argument("--thick", default=2, help="line thickness (px)", type="double")
 parser$add_argument("--identity", default=0, help="minimum identity (0.0 - 1.0)", type="double")
+parser$add_argument("--alen", default=0, help="minimum alignment length", type="double")
 
 
 args <- parser$parse_args(args.cmd)
@@ -103,9 +104,13 @@ paf[paf$strand==-1,8:9] <- paf[paf$strand==-1,9:8]
 
 #paf$idy <- paf$V10 / paf$V11 * paf$strand   # minimap1
 paf$idy <- gsub("dv:f:","",paf$V16) # gross workaround for using est. divergence from minimap2 dv tag
-paf$idy <- (1.0 - as.numeric(paf$idy))
+paf$idy <- (1.0 - as.numeric(paf$idy)) * paf$strand
 
+# Drop sequences lower than the absolute identity
 paf <- paf[abs(paf$idy) >= args$identity,]
+
+# Drop sequences shorter than alen
+paf <- paf[abs(paf$V4-paf$V3) >= args$alen,]
 
 ## * map contig boundaries to gglayer
 

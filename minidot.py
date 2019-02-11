@@ -7,7 +7,7 @@ import pysam
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("minidotr", help="path to minidot.R [minidot]", default="minidot.R")
+parser.add_argument("minidotr", help="path to minidot.R [minidot.R]", default="minidot.R")
 parser.add_argument("output", help="output name and format, prefix of all tmp files [minidot.pdf]", default="minidot.pdf")
 parser.add_argument("fasta", help="fasta files", nargs='+')
 parser.add_argument("--mapper", help="path to binary [minimap2]", default="minimap2")
@@ -20,6 +20,7 @@ parser.add_argument("--title", help="plot title [None]")
 parser.add_argument("--no-self", help="drop self-self mappings from resulting plot [False]", action='store_true', default=False)
 parser.add_argument("--strip", help="remove facets, axes and junk [False]", action='store_true', default=False)
 parser.add_argument("--identity", help="minimum identity for plot (0.0 - 1.0) [0]", default='0.0')
+parser.add_argument("--alen", help="minimum length to plot an alignment [0]", default='0.0')
 parser.add_argument("--ignore-missing", help="don't do anything if an input file is missing", action='store_true', default=False)
 
 args = parser.parse_args()
@@ -66,6 +67,8 @@ if args.thick:
     Rargs.extend(['--thick', args.thick])
 if args.identity:
     Rargs.extend(['--identity', args.identity])
+if args.alen:
+    Rargs.extend(['--alen', args.alen])
 
 print(Rargs)
 call([args.minidotr] + Rargs)

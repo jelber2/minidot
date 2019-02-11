@@ -83,19 +83,6 @@ if (ARGPARSE_TRUE == "") quit();
 paf <- read.table(args$i, fill=TRUE, header=FALSE)
 len <- read.table(args$l) #, stringAsFactor=FALSE)
 
-sets <- unique(len$V1)
-
-len$V1 <- factor(len$V1, levels=sets)
-paf$V1 <- factor(paf$V1, levels=sets)
-paf$V6 <- factor(paf$V6, levels=sets)
-
-sets.n <- length(unique(paf$V1))
-
-
-if(dim(paf)[1]==0){
-    write("no matches between sets, nothing to plot", stderr())
-    quit(status=1);
-}
 
 paf$ava <- paf$V1:paf$V6
 paf$strand <- ifelse(paf$V5=='+', 1, -1)
@@ -123,14 +110,10 @@ yava.rt <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=nu
 xava.rt <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=numeric(0), ymin=numeric(0), ymax=numeric(0))
 
 ava.bg <- data.frame(V1=character(0), V6=character(0), xmin=numeric(0), xmax=numeric(0), ymin=numeric(0), ymax=numeric(0))
+
 if(args$no_self){
-    if (sets.n > 1){
-        paf<-paf[!paf$V1==paf$V6,]
-        if(sets.n == 2){
-            ## make sure that for two sets, they don't appear in same dimension
-            paf<-paf[paf$V1==paf$V1[1],]
-        }
-    }
+    paf<-paf[!paf$V1==paf$V6,]
+    paf<-paf[paf$V1==paf$V1[1],]
 }
 
 
@@ -164,7 +147,7 @@ if (args$theme=="dark"){
 }
 
 gg <- gg + geom_rect(data=ava.bg, aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill=col.fill)
-gg <- gg + geom_segment(data=ava.se, aes(x=x,xend=xend,y=y,yend=yend), size=.1, color=col.line, linetype = 3)
+#gg <- gg + geom_segment(data=ava.se, aes(x=x,xend=xend,y=y,yend=yend), size=.1, color=col.line, linetype = 3) # ignore contig lines
 gg <- gg + geom_segment(data=paf, aes(x=V3, xend=V4, y=V8, yend=V9, color=idy), size=args$thick, lineend = "round")
 
 if (args$theme=="dark") gg <- gg + scale_colour_distiller("Identity", palette="Spectral", direction=1, limits=c(-1, 1))

@@ -22,8 +22,13 @@ parser.add_argument("--strip", help="remove facets, axes and junk [False]", acti
 parser.add_argument("--identity", help="minimum identity for plot (0.0 - 1.0) [0]", default='0.0')
 parser.add_argument("--alen", help="minimum length to plot an alignment [0]", default='0.0')
 parser.add_argument("--ignore-missing", help="don't do anything if an input file is missing", action='store_true', default=False)
+parser.add_argument("--drop-contains", help="drop sequences if their name contains one or more words from a comma delimited list", default="")
 
 args = parser.parse_args()
+
+if len(args.drop_contains) > 0:
+    args.drop_contains = args.drop_contains.split(',')
+
 prefix = '.'.join(args.output.split('.')[:-1])+'.'
 
 #TODO Check the binaries (whatever)
@@ -37,6 +42,9 @@ for fasta in args.fasta:
     try:
         fasta_fh = pysam.FastaFile(fasta)
         for reference in fasta_fh.references:
+            if sum([word in reference for word in args.drop_contains]):
+                print("Dropping %s as it appears in the --drop-contains list." % reference)
+                continue
             seq = fasta_fh.fetch(reference=reference)
             join_seq.append(seq)
             tlen.write("%s\t%s\n" % (basename, len(seq)))

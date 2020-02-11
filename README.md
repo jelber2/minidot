@@ -4,7 +4,7 @@ A somewhat updated and more portable version of [Thomas Hackl's `minidot`](https
 
 ### Dependencies
 
-* minimap2
+* minimap2 (specify `--mapper path/to/minimap2` if not on your `$PATH`)
 * python with pysam
 * R-base with ggplot2, stringr, scales, argparse
 
@@ -14,7 +14,10 @@ A somewhat updated and more portable version of [Thomas Hackl's `minidot`](https
 
 ### Usage
 
-    python minidot.py ./minidot.R output.png seq1.fa seq2.fa
+    python minidot/minidot.py minidot/minidot.R output.png seq1.fa seq2.fa [seq3.fa ...]
+
+`minidot` will merge all sequences in each `FASTA`, using the first sequence name as the canonical sequence name. You can naively suppress sequences based on their name with `--drop-contains`.
+`minimap2` will align every pairing of the new merged FASTAs to construct a PAF, which is then plotted as a diagonal plot by `minidot.R`.
 
 ### Maintenance
 

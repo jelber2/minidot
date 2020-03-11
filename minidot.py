@@ -9,6 +9,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("minidotr", help="path to minidot.R [minidot.R]", default="minidot.R")
 parser.add_argument("output", help="output name and format, prefix of all tmp files [minidot.pdf]", default="minidot.pdf")
+parser.add_argument("--threads", help="threads for minimap2 [1]", default='1')
 parser.add_argument("fasta", help="fasta files", nargs='+')
 parser.add_argument("--mapper", help="path to binary [minimap2]", default="minimap2")
 parser.add_argument("--mode", help="mapper mode [asm10]", default="asm10")
@@ -59,7 +60,7 @@ super_fasta.close()
 tlen.close()
 
 paf = open(prefix+"paf", "w")
-call([args.mapper, '-x', args.mode, '--no-long-join', '--dual=yes', '-P', prefix+'fa', prefix+'fa'], stdout=paf)
+call([args.mapper, '-x', args.mode, '-t', args.threads, '--no-long-join', '--dual=yes', '-P', prefix+'fa', prefix+'fa'], stdout=paf)
 paf.close()
 
 Rargs = ["-i", prefix+'paf', "-l", prefix+'tlen', '-o', args.output]
